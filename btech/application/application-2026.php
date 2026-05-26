@@ -1443,7 +1443,7 @@
                 <!-- Filled by JS -->
               </div>
 
-              <div class="application-download-bar">
+              <!-- <div class="application-download-bar">
                 <p class="application-download-hint">
                   Save a PDF copy of your filled application for your records before you submit.
                 </p>
@@ -1466,7 +1466,7 @@
                   </svg>
                   Download Application (PDF)
                 </button>
-              </div>
+              </div> -->
 
               <div class="declaration-box">
                 <p>

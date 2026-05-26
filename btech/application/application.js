@@ -853,7 +853,6 @@
       "upload_signature",
       "upload_jee",
       "upload_ts-eapcet",
-      "upload_other_rank_card",
       "upload_ssc",
       "upload_hsc",
       "upload_aadhaar",

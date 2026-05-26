@@ -41,10 +41,12 @@
 const SHEET_ID = "1UBUaQQZAMqkaqnk7aixHMDN5YELhLIZZP4e4L1WoerE";
 const DRIVE_FOLDER_ID = "1SC5lMaZs0aR5QOIPvGTWcHyB6MyMJXna";
 const SHEET_NAME = "CRR Applications";
+const SHORTLIST_SHEET_NAME = "60-percent-or-above";
+const SHORTLIST_MPC_THRESHOLD = 60;
 const SEND_CONFIRMATION_EMAIL = true;
 const ADMIN_NOTIFY_EMAIL = "btechadmissions.crr@gmail.com"; // btechadmissions@crraoaimscs.res.in
 /** Bump when deploying — check via the web-app URL in a browser. */
-const APP_SCRIPT_VERSION = "2026.05.26-mpc";
+const APP_SCRIPT_VERSION = "2026.05.26-mpc-shortlist";
 /* ─────────────────────────────────── */
 
 /** Browser GET — used as a health check. */
@@ -96,36 +98,7 @@ function doPost(e) {
 
     /* 3. Append a row to the Sheet */
     const ss = SpreadsheetApp.openById(SHEET_ID);
-    let sheet = ss.getSheetByName(SHEET_NAME);
-    if (!sheet) {
-      sheet = ss.insertSheet(SHEET_NAME);
-      syncHeaderRow_(sheet);
-    }
-    /* If header row missing (someone wiped it), restore */
-    if (sheet.getLastRow() === 0) {
-      syncHeaderRow_(sheet);
-    } else {
-      /* Keep row 1 aligned with HEADER_ROW when columns are added/changed */
-      syncHeaderRow_(sheet);
-    }
-
-    // Legacy sheets used duplicate "Aadhaar" headers (number + upload).
-    // Normalize labels so the sheet stays readable going forward.
-    try {
-      const headerRange = sheet.getRange(1, 1, 1, HEADER_ROW.length);
-      const headerValues = headerRange.getValues()[0];
-      const aadhaarIdx = [];
-      headerValues.forEach((v, idx) => {
-        if (String(v).trim() === "Aadhaar") aadhaarIdx.push(idx);
-      });
-      if (aadhaarIdx.length >= 2) {
-        headerValues[aadhaarIdx[0]] = "Aadhaar Number";
-        headerValues[aadhaarIdx[1]] = "Aadhaar (Upload)";
-        headerRange.setValues([headerValues]);
-      }
-    } catch (hdrErr) {
-      console.error("Header normalize failed:", hdrErr);
-    }
+    const sheet = getOrCreateSheet_(ss, SHEET_NAME);
 
     const row = HEADER_ROW.map((col) => {
       switch (col) {
@@ -160,6 +133,19 @@ function doPost(e) {
       }
     });
     sheet.appendRow(row);
+
+    /* 3b. If the applicant's MPC group % >= threshold, mirror the row
+       into the shortlist tab with identical columns. */
+    const mpcNum = parseMpcPct_(payload.hsc_mpc_pct);
+    if (mpcNum !== null && mpcNum >= SHORTLIST_MPC_THRESHOLD) {
+      try {
+        const shortlistSheet = getOrCreateSheet_(ss, SHORTLIST_SHEET_NAME);
+        shortlistSheet.appendRow(row);
+      } catch (shortlistErr) {
+        // Non-fatal — log but don't block the submission.
+        console.error("Shortlist append failed:", shortlistErr);
+      }
+    }
 
     /* 4. Optional confirmation email to applicant */
     if (SEND_CONFIRMATION_EMAIL && payload.email) {
@@ -357,6 +343,46 @@ function syncHeaderRow_(sheet) {
     .setFontWeight("bold")
     .setBackground("#1a3a6b")
     .setFontColor("#ffffff");
+}
+
+/** Get a tab by name (create it if missing), sync its header row, and
+    normalize any legacy duplicate "Aadhaar" headers. */
+function getOrCreateSheet_(ss, name) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+  syncHeaderRow_(sheet);
+
+  // Legacy sheets used duplicate "Aadhaar" headers (number + upload).
+  // Normalize labels so the sheet stays readable going forward.
+  try {
+    const headerRange = sheet.getRange(1, 1, 1, HEADER_ROW.length);
+    const headerValues = headerRange.getValues()[0];
+    const aadhaarIdx = [];
+    headerValues.forEach(function (v, idx) {
+      if (String(v).trim() === "Aadhaar") aadhaarIdx.push(idx);
+    });
+    if (aadhaarIdx.length >= 2) {
+      headerValues[aadhaarIdx[0]] = "Aadhaar Number";
+      headerValues[aadhaarIdx[1]] = "Aadhaar (Upload)";
+      headerRange.setValues([headerValues]);
+    }
+  } catch (hdrErr) {
+    console.error("Header normalize failed:", hdrErr);
+  }
+  return sheet;
+}
+
+/** Extract a numeric MPC % from arbitrary user input.
+    Accepts "85", "85%", "85.50", "  85.5 % ", etc. Returns null when no
+    parseable number is present so we don't accidentally shortlist blanks. */
+function parseMpcPct_(val) {
+  if (val == null) return null;
+  const s = String(val).replace(/,/g, "").trim();
+  if (!s) return null;
+  const m = s.match(/(\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  return Number.isFinite(n) ? n : null;
 }
 
 /* ────────────  EMAIL TEMPLATE  ──────────── */

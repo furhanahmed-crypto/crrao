@@ -26,7 +26,7 @@
   const PAGE = { w: 210, h: 297 };
   const MARGIN = { top: 16, right: 14, bottom: 16, left: 14 };
   const CONTENT_W = PAGE.w - MARGIN.left - MARGIN.right;
-  const COL_LABEL_W = 80;
+  const COL_LABEL_W = 92;
   const COL_VALUE_W = CONTENT_W - COL_LABEL_W;
   const HEADER_HEIGHT = 22;
   const FOOTER_RESERVE = 12;
@@ -70,20 +70,56 @@
     });
   }
 
-  function getSignatureDataUrl() {
+  /** Load a data URL into an Image to read its natural pixel size. Resolves
+      to { w, h } or null. Used to preserve aspect ratio in the PDF. */
+  function getImageNaturalSize(dataUrl) {
+    return new Promise((resolve) => {
+      if (!dataUrl) return resolve(null);
+      const img = new Image();
+      img.onload = () =>
+        resolve({
+          w: img.naturalWidth || img.width || 0,
+          h: img.naturalHeight || img.height || 0,
+        });
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
+  }
+
+  /** Returns { dataUrl, w, h } or null. The natural pixel size is used
+      later to embed the signature without horizontal/vertical stretching. */
+  async function getSignatureDataUrl() {
+    /* 1) Prefer the hidden field populated by the signature pad on each stroke. */
     const hidden = document.getElementById("signature_data");
-    if (hidden?.value?.startsWith("data:")) return hidden.value;
-    const canvas = document.getElementById("sigCanvas");
-    if (!canvas) return null;
-    try {
-      const blank = document.createElement("canvas");
-      blank.width = canvas.width;
-      blank.height = canvas.height;
-      if (canvas.toDataURL() === blank.toDataURL()) return null;
-      return canvas.toDataURL("image/png");
-    } catch (e) {
-      return null;
+    if (hidden?.value?.startsWith("data:")) {
+      const size = await getImageNaturalSize(hidden.value);
+      return { dataUrl: hidden.value, w: size?.w || 0, h: size?.h || 0 };
     }
+
+    /* 2) Fall back to reading the canvas directly — but only if it isn't blank. */
+    const canvas = document.getElementById("sigCanvas");
+    if (canvas) {
+      try {
+        const blank = document.createElement("canvas");
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+        if (canvas.toDataURL() !== blank.toDataURL()) {
+          return {
+            dataUrl: canvas.toDataURL("image/png"),
+            w: canvas.width,
+            h: canvas.height,
+          };
+        }
+      } catch (e) {
+        /* fall through to upload fallback */
+      }
+    }
+
+    /* 3) Final fallback: a scanned signature uploaded in Step 8. */
+    const upload = await readImageAsDataUrl("upload_signature");
+    if (!upload) return null;
+    const size = await getImageNaturalSize(upload);
+    return { dataUrl: upload, w: size?.w || 0, h: size?.h || 0 };
   }
 
   function safeFilename(name) {
@@ -99,7 +135,7 @@
   /* ---------- data shape ---------- */
   async function collectData(referenceId, statusLabel) {
     const photo = await readImageAsDataUrl("upload_photo");
-    const signature = getSignatureDataUrl();
+    const signature = await getSignatureDataUrl();
 
     return {
       meta: {
@@ -301,7 +337,8 @@
     if (ctx.y + needed > Y_LIMIT) {
       ctx.doc.addPage();
       ctx.page += 1;
-      ctx.y = drawHeader(ctx.doc, ctx.meta);
+      /* Subsequent pages skip the institute heading — start from the top margin. */
+      ctx.y = MARGIN.top;
     }
   }
 
@@ -427,7 +464,7 @@
     ctx.y += 3;
   }
 
-  function drawDeclaration(ctx, signatureUrl) {
+  function drawDeclaration(ctx, signature) {
     drawSectionHeader(ctx, "9. Declaration");
     const { doc } = ctx;
 
@@ -438,7 +475,7 @@
     doc.setFontSize(9.2);
     const lines = doc.splitTextToSize(text, CONTENT_W);
     const declH = lines.length * 4.4 + 4;
-    const sigBoxH = 24;
+    const sigBoxH = 30;
 
     ensureSpace(ctx, declH + sigBoxH + 6);
 
@@ -479,20 +516,60 @@
     doc.setLineWidth(0.2);
     doc.rect(sigX, blockY + 5.5, sigBoxW, sigBoxH - 2, "S");
 
-    if (signatureUrl) {
+    if (signature?.dataUrl) {
+      /* Fit the signature inside the box while preserving its native aspect
+         ratio so it doesn't get stretched horizontally or vertically.
+         Center it within the available area. */
+      const maxW = sigBoxW - 4;
+      const maxH = sigBoxH - 5;
+      let imgW = maxW;
+      let imgH = maxH;
+      if (signature.w > 0 && signature.h > 0) {
+        const srcAspect = signature.w / signature.h;
+        const boxAspect = maxW / maxH;
+        if (srcAspect > boxAspect) {
+          imgW = maxW;
+          imgH = maxW / srcAspect;
+        } else {
+          imgH = maxH;
+          imgW = maxH * srcAspect;
+        }
+      }
+      const imgX = sigX + 2 + (maxW - imgW) / 2;
+      const imgY = blockY + 7 + (maxH - imgH) / 2;
+
+      /* Canvas drawings are PNG; uploaded scans may be JPG/JPEG. Detect
+         from the data-URL prefix and retry with the alternate format if
+         jsPDF rejects the first guess. */
+      const sigFmt = signature.dataUrl.startsWith("data:image/png")
+        ? "PNG"
+        : "JPEG";
       try {
         doc.addImage(
-          signatureUrl,
-          "PNG",
-          sigX + 2,
-          blockY + 7,
-          sigBoxW - 4,
-          sigBoxH - 5,
+          signature.dataUrl,
+          sigFmt,
+          imgX,
+          imgY,
+          imgW,
+          imgH,
           undefined,
           "FAST",
         );
       } catch (e) {
-        /* signature is optional in PDF */
+        try {
+          doc.addImage(
+            signature.dataUrl,
+            sigFmt === "PNG" ? "JPEG" : "PNG",
+            imgX,
+            imgY,
+            imgW,
+            imgH,
+            undefined,
+            "FAST",
+          );
+        } catch (e2) {
+          /* signature is optional in PDF */
+        }
       }
     } else {
       setText(doc, MUTED);
