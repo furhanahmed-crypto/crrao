@@ -1,0 +1,336 @@
+/* ============================================================
+   Enquiry modal — homepage popup + shared feedback messages
+   ============================================================ */
+
+/* ── Overlay ── */
+.enquiry-modal {
+  /* Bootstrap sets html { font-size: 10px }; application/style.css uses 16px.
+     Use em from a fixed 10px base so popup typography matches other /btech/ pages. */
+  font-size: 10px;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25em;
+  background: rgba(13, 27, 42, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+.enquiry-modal.open {
+  opacity: 1;
+  visibility: visible;
+}
+body.enquiry-modal-open {
+  overflow: hidden;
+}
+
+/* ── Modal shell ── */
+.enquiry-modal-inner {
+  position: relative;
+  width: 100%;
+  max-width: 900px;          /* wider to fit image + form side-by-side */
+  max-height: 90vh;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 28px 56px rgba(13, 27, 42, 0.28);
+  transform: translateY(18px) scale(0.97);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.enquiry-modal.open .enquiry-modal-inner {
+  transform: translateY(0) scale(1);
+}
+
+/* ── Split layout (image | form) ── */
+.enquiry-modal-inner--split {
+  display: grid;
+  grid-template-columns: 3fr 3fr;  /* image slightly narrower */
+}
+
+/* ── Close button ── */
+.enquiry-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.enquiry-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+.enquiry-modal-close svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+/* ── Image panel (left) ── */
+.enquiry-modal-img-panel {
+  position: relative;
+  background: #0f2347;
+  overflow: hidden;
+  min-height: 480px;
+}
+.enquiry-modal-img-panel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  opacity: 0.92;
+}
+
+/* ── Form panel (right) ── */
+.enquiry-modal-form-panel {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+/* ── Header strip inside form panel ── */
+.enquiry-modal-header {
+  padding: 1.6em 1.75em 1.35em;
+  background: linear-gradient(135deg, #0f2347 0%, #173070 55%, #1e4080 100%);
+  color: #fff;
+  position: relative;
+}
+.enquiry-modal-header::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #fec722, #e8740c);
+}
+
+.enquiry-modal-badge {
+  display: inline-block;
+  margin-bottom: 0.6em;
+  padding: 0.22em 0.75em;
+  border-radius: 999px;
+  background: rgba(254, 199, 34, 0.18);
+  color: #fec722;
+  font-family: "Open Sans", sans-serif;
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.enquiry-modal-header h3 {
+  margin: 0 0 0 0;
+  padding: 10px 0;
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.75em;          /* was 1.35em */
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+}
+.enquiry-modal-header p {
+  margin: 0;
+  font-family: "Open Sans", sans-serif;
+  font-size: 0.97em;         /* was 0.88em */
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Form body ── */
+.enquiry-modal-body {
+  padding: 1.4em 1.75em 1.6em;
+  flex: 1;
+}
+
+/* Modal form fields */
+.enquiry-form--modal .enquiry-fields {
+  display: flex;
+  flex-direction: column;
+}
+.enquiry-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9em;
+}
+.enquiry-field {
+  margin-bottom: 0.9em;
+}
+
+.enquiry-field label {
+  display: block;
+  margin-bottom: 0.38em;
+  font-family: "Open Sans", sans-serif;
+  font-size: 0.92em;         /* was 0.82em */
+  font-weight: 700;
+  color: #1f2937;
+  letter-spacing: 0.01em;
+}
+.enquiry-field label span {
+  color: #e8740c;
+}
+
+.enquiry-input {
+  display: block;
+  width: 100%;
+  padding: 0.78em 0.95em;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  font-family: "Open Sans", sans-serif;
+  font-size: 1em;            /* was 0.92em — key fix for "too small text" */
+  color: #1f2937;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.enquiry-input::placeholder {
+  color: #9ca3af;
+  font-size: 0.96em;
+}
+.enquiry-input:focus {
+  outline: none;
+  border-color: #173070;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(23, 48, 112, 0.13);
+}
+.enquiry-input.enquiry-input--error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+.enquiry-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* ── Action row ── */
+.enquiry-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85em;
+  margin-top: 0.3em;
+}
+.enquiry-submit {
+  flex: 1;
+  padding: 0.85em 1.25em;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #173070, #1e4080);
+  color: #fff;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.95em;         /* was 0.88em */
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.enquiry-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(23, 48, 112, 0.3);
+}
+.enquiry-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.enquiry-dismiss {
+  padding: 0.85em 0.5em;
+  border: none;
+  background: none;
+  color: #6b7280;
+  font-family: "Open Sans", sans-serif;
+  font-size: 0.92em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+.enquiry-dismiss:hover {
+  color: #173070;
+}
+
+.enquiry-consent {
+  margin: 0.8em 0 0;
+  font-family: "Open Sans", sans-serif;
+  font-size: 0.8em;
+  line-height: 1.45;
+  color: #9ca3af;
+  text-align: center;
+}
+
+/* ── Shared feedback messages (contact page + modal) ── */
+.enquiry-message {
+  margin: 0 0 1em;
+  padding: 0.85em 1em;
+  border-radius: 8px;
+  font-family: "Open Sans", sans-serif;
+  font-size: 0.97em;
+  line-height: 1.5;
+}
+.enquiry-message--success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+.enquiry-message--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* ── Responsive ── */
+
+/* Mobile: form only — hide left image below 768px */
+@media (max-width: 767px) {
+  .enquiry-modal {
+    padding: 0.75em;
+    align-items: flex-end;
+  }
+  .enquiry-modal-inner--split {
+    grid-template-columns: 1fr;
+    max-height: 96vh;
+    border-radius: 18px 18px 0 0;
+  }
+  .enquiry-modal-img-panel {
+    display: none;
+  }
+  .enquiry-modal-form-panel {
+    max-height: none;
+  }
+  .enquiry-field-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .enquiry-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .enquiry-dismiss {
+    text-align: center;
+    padding: 0.5em;
+  }
+  .enquiry-modal-header {
+    padding: 1.1em 1.25em 1em;
+  }
+  .enquiry-modal-body {
+    padding: 1em 1.25em 1.25em;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 420px) {
+  .enquiry-modal-header h3 {
+    font-size: 1.2em;
+  }
+}

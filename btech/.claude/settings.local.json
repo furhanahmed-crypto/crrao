@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(extract-text \"/Users/farhan/Downloads/Admission Notification 2026-27 Final.docx\")",
+      "Bash(pandoc \"/Users/farhan/Downloads/Admission Notification 2026-27 Final.docx\" -t markdown)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}

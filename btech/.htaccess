@@ -1,0 +1,4 @@
+RewriteEngine On
+
+# Clean URL: /btech-notification-2026 → btech-notification-2026.php
+RewriteRule ^btech-notification-2026/?$ btech-notification-2026.php [L]
