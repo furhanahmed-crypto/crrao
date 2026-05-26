@@ -35,7 +35,9 @@
   /* ---------- DOM hooks ---------- */
   const form = document.getElementById("applyForm");
   const downloadBtn = document.getElementById("downloadApplicationBtn");
-  const successDownloadBtn = document.getElementById("downloadApplicationSuccessBtn");
+  const successDownloadBtn = document.getElementById(
+    "downloadApplicationSuccessBtn",
+  );
   if (!form || (!downloadBtn && !successDownloadBtn)) return;
 
   /* ---------- form readers ---------- */
@@ -304,7 +306,12 @@
 
     setDraw(doc, PRIMARY);
     doc.setLineWidth(0.6);
-    doc.line(x, top + HEADER_HEIGHT - 2, PAGE.w - MARGIN.right, top + HEADER_HEIGHT - 2);
+    doc.line(
+      x,
+      top + HEADER_HEIGHT - 2,
+      PAGE.w - MARGIN.right,
+      top + HEADER_HEIGHT - 2,
+    );
 
     return top + HEADER_HEIGHT + 2;
   }
@@ -357,7 +364,16 @@
       doc.addImage(dataUrl, fmt, x, y, w, h, undefined, "FAST");
     } catch (e) {
       try {
-        doc.addImage(dataUrl, fmt === "JPEG" ? "PNG" : "JPEG", x, y, w, h, undefined, "FAST");
+        doc.addImage(
+          dataUrl,
+          fmt === "JPEG" ? "PNG" : "JPEG",
+          x,
+          y,
+          w,
+          h,
+          undefined,
+          "FAST",
+        );
       } catch (e2) {
         /* ignore — photo is optional in PDF */
       }

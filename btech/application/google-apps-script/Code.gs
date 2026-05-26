@@ -58,7 +58,7 @@ const SHORTLIST_MPC_THRESHOLD = 60;
 const SEND_CONFIRMATION_EMAIL = true;
 const ADMIN_NOTIFY_EMAIL = "btechadmissions.crr@gmail.com"; // btechadmissions@crraoaimscs.res.in
 /** Bump when deploying — check via the web-app URL in a browser. */
-const APP_SCRIPT_VERSION = "2026.05.26-clean-v1";
+const APP_SCRIPT_VERSION = "2026.05.26-email-pdf-link";
 /* ─────────────────────────────────── */
 
 /** Browser GET — used as a health check. */
@@ -171,7 +171,12 @@ function doPost(e) {
           to: payload.email,
           cc: ADMIN_NOTIFY_EMAIL,
           subject: `B.Tech 2026-27 Application Received — ${refId}`,
-          htmlBody: buildEmailHtml(payload, refId, folder.getUrl()),
+          htmlBody: buildEmailHtml(
+            payload,
+            refId,
+            folder.getUrl(),
+            fileLinks.upload_application_pdf || "",
+          ),
           name: "CR Rao AIMSCS Admissions",
         });
       } catch (mailErr) {
@@ -404,8 +409,17 @@ function parseMpcPct_(val) {
 }
 
 /* ────────────  EMAIL TEMPLATE  ──────────── */
-function buildEmailHtml(p, refId, folderUrl) {
+function buildEmailHtml(p, refId, folderUrl, applicationPdfUrl) {
   const safe = (s) => (s == null ? "" : String(s));
+  const pdfUrl = safe(applicationPdfUrl).trim();
+  const pdfBlock = pdfUrl
+    ? `<p style="margin-top:1.25rem;font-size:14px;">
+        <a href="${pdfUrl}" style="display:inline-block;background:#e8740c;color:#fff;padding:0.65rem 1.25rem;border-radius:6px;text-decoration:none;font-weight:600;">
+          Download your application copy (PDF)
+        </a>
+      </p>
+      <p style="font-size:13px;color:#6b7280;margin-top:0.5rem;">Please save this PDF for your records.</p>`
+    : "";
   return `
   <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1f2937;">
     <div style="background:#1a3a6b;color:#fff;padding:1.25rem;border-radius:8px 8px 0 0;">
@@ -414,11 +428,12 @@ function buildEmailHtml(p, refId, folderUrl) {
     </div>
     <div style="padding:1.25rem;background:#f8f9fc;border:1px solid #e8eaf0;border-top:none;border-radius:0 0 8px 8px;">
       <p>Hello ${safe(p.full_name) || "Applicant"},</p>
-      <p>Thank you for applying to the 4-Year B.Tech program at CR Rao AIMSCS. Your application has been received and will be reviewed by our admissions cell within 24 working hours.</p>
+      <p>Thank you for applying to the 4-Year B.Tech program at CR Rao AIMSCS. Your application has been received and will be reviewed by our admissions team</p>
       <p style="background:#0d1b2a;color:#fff;padding:0.65rem 1rem;border-radius:6px;font-family:'Courier New',monospace;letter-spacing:2px;font-weight:bold;display:inline-block;">
         Reference ID: ${refId}
       </p>
       <p style="font-size:14px;">Please save this reference ID — you'll need it for any future communication.</p>
+      ${pdfBlock}
       <p style="margin-top:1rem;font-size:14px;">If you face any technical issue, please email
         <a href="mailto:${ADMIN_NOTIFY_EMAIL}" style="color:#e8740c;">${ADMIN_NOTIFY_EMAIL}</a>
         or call <strong>+91&nbsp;7331&nbsp;155&nbsp;319</strong>.
