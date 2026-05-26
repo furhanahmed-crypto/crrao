@@ -880,6 +880,19 @@
       delete payload.signature_data;
     }
 
+    /* Generated application PDF — saved to Drive and linked in the Sheet */
+    if (window.CRRaoApplicationPdf?.getBase64ForSubmit) {
+      try {
+        payload.files.upload_application_pdf =
+          await window.CRRaoApplicationPdf.getBase64ForSubmit(refId);
+      } catch (pdfErr) {
+        console.warn(
+          "Application PDF could not be generated for upload:",
+          pdfErr,
+        );
+      }
+    }
+
     /* 3. POST to Apps Script.
           Use form-urlencoded (no preflight) to avoid CORS issues. */
     try {

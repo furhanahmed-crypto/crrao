@@ -592,6 +592,41 @@
   }
 
   /* ---------- public flow ---------- */
+  async function buildApplicationPdf(referenceId, statusLabel) {
+    const JsPDFCtor = await waitForJsPDF();
+    if (!JsPDFCtor) {
+      throw new Error(
+        "PDF engine is still loading. Please wait a moment and try again — your uploaded files will be preserved.",
+      );
+    }
+
+    const data = await collectData(referenceId, statusLabel);
+
+    const doc = new JsPDFCtor({
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+    });
+    doc.setProperties({
+      title: "B.Tech Application 2026-27",
+      subject: "CR Rao AIMSCS — B.Tech Admission Application",
+      creator: "CR Rao AIMSCS",
+      author: data.meta.applicantName,
+    });
+
+    const ctx = newContext(doc, data.meta);
+    if (data.images.photo) drawPhoto(ctx, data.images.photo);
+    drawMetaBox(ctx);
+    data.sections.forEach((s) => drawSection(ctx, s));
+    drawDeclaration(ctx, data.images.signature);
+    paintAllFooters(doc);
+
+    const filename = `CRRao-BTech-Application-2026-${safeFilename(
+      getField("full_name"),
+    )}.pdf`;
+    return { doc, filename };
+  }
+
   async function downloadPdf(referenceId, statusLabel, triggerBtn) {
     const originalText = triggerBtn?.innerHTML;
     if (triggerBtn) {
@@ -600,37 +635,10 @@
     }
 
     try {
-      const JsPDFCtor = await waitForJsPDF();
-      if (!JsPDFCtor) {
-        throw new Error(
-          "PDF engine is still loading. Please wait a moment and try again — your uploaded files will be preserved.",
-        );
-      }
-
-      const data = await collectData(referenceId, statusLabel);
-
-      const doc = new JsPDFCtor({
-        unit: "mm",
-        format: "a4",
-        orientation: "portrait",
-      });
-      doc.setProperties({
-        title: "B.Tech Application 2026-27",
-        subject: "CR Rao AIMSCS — B.Tech Admission Application",
-        creator: "CR Rao AIMSCS",
-        author: data.meta.applicantName,
-      });
-
-      const ctx = newContext(doc, data.meta);
-      if (data.images.photo) drawPhoto(ctx, data.images.photo);
-      drawMetaBox(ctx);
-      data.sections.forEach((s) => drawSection(ctx, s));
-      drawDeclaration(ctx, data.images.signature);
-      paintAllFooters(doc);
-
-      const filename = `CRRao-BTech-Application-2026-${safeFilename(
-        getField("full_name"),
-      )}.pdf`;
+      const { doc, filename } = await buildApplicationPdf(
+        referenceId,
+        statusLabel,
+      );
       doc.save(filename);
     } catch (err) {
       console.error("[application-download]", err);
@@ -645,6 +653,22 @@
       }
     }
   }
+
+  /** Used by application.js on submit — returns base64 PDF for Drive upload. */
+  window.CRRaoApplicationPdf = {
+    async getBase64ForSubmit(referenceId) {
+      const { doc, filename } = await buildApplicationPdf(
+        referenceId,
+        "Submitted copy",
+      );
+      const dataUri = doc.output("datauristring");
+      return {
+        name: filename,
+        type: "application/pdf",
+        data: dataUri.split(",")[1],
+      };
+    },
+  };
 
   downloadBtn?.addEventListener("click", () => {
     downloadPdf("", "Draft copy (before submission)", downloadBtn);

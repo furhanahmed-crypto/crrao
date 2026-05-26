@@ -28,25 +28,37 @@
 
    ▸ What happens at runtime
    ─────────────────────────────────────────────────────────────
-   • Each submission becomes one row in the "Applications" tab.
+   • Each submission appends one row to tab "CRR-btech-applications".
+   • Applicants with MPC Group % >= 60 are also mirrored to
+     "60-percent-or-above" (same columns, same row values).
    • Each applicant's uploaded documents are saved to a sub-folder
      named  <REFERENCE_ID> – <FullName>  inside DRIVE_FOLDER_ID.
-   • The Sheet stores Drive-file links so admin can click through.
+   • Headers are written ONLY when a tab is brand-new and empty.
+     Existing tabs are never modified (no column insert, no rewrite).
    • The script also emails the candidate a confirmation if their
      email is provided (toggle SEND_CONFIRMATION_EMAIL below).
+
+   ▸ Sheet setup (Option 3 — fresh tab)
+   ─────────────────────────────────────────────────────────────
+   1. Rename the old broken tab to e.g. "CRR Applications (backup)".
+   2. Create an empty tab named exactly: CRR-btech-applications
+      (or let the first submission create it with correct headers).
+   3. Tab "60-percent-or-above" stays as-is — do not edit its headers.
 
    ============================================================ */
 
 /* ────────────  CONFIG  ──────────── */
 const SHEET_ID = "1UBUaQQZAMqkaqnk7aixHMDN5YELhLIZZP4e4L1WoerE";
 const DRIVE_FOLDER_ID = "1SC5lMaZs0aR5QOIPvGTWcHyB6MyMJXna";
-const SHEET_NAME = "CRR Applications";
+/** Primary applications tab — all submissions land here. */
+const SHEET_NAME = "CRR-btech-applications-2026-27";
+/** Shortlist tab — same row mirrored when MPC Group % >= threshold. */
 const SHORTLIST_SHEET_NAME = "60-percent-or-above";
 const SHORTLIST_MPC_THRESHOLD = 60;
 const SEND_CONFIRMATION_EMAIL = true;
 const ADMIN_NOTIFY_EMAIL = "btechadmissions.crr@gmail.com"; // btechadmissions@crraoaimscs.res.in
 /** Bump when deploying — check via the web-app URL in a browser. */
-const APP_SCRIPT_VERSION = "2026.05.26-mpc-shortlist";
+const APP_SCRIPT_VERSION = "2026.05.26-clean-v1";
 /* ─────────────────────────────────── */
 
 /** Browser GET — used as a health check. */
@@ -56,8 +68,11 @@ function doGet() {
       status: "ok",
       message: "CR Rao AIMSCS application endpoint is live.",
       version: APP_SCRIPT_VERSION,
+      sheet_name: SHEET_NAME,
+      shortlist_sheet: SHORTLIST_SHEET_NAME,
       header_columns: HEADER_ROW.length,
       has_mpc_group_pct: HEADER_ROW.indexOf("MPC Group %") !== -1,
+      has_application_pdf: HEADER_ROW.indexOf("Application PDF") !== -1,
     }),
   ).setMimeType(ContentService.MimeType.JSON);
 }
@@ -126,6 +141,8 @@ function doPost(e) {
           return fileLinks.upload_aadhaar || "";
         case "Payment Receipt":
           return fileLinks.upload_payment_receipt || "";
+        case "Application PDF":
+          return fileLinks.upload_application_pdf || "";
         default: {
           const key = COLUMN_TO_FIELD[col];
           return key ? payload[key] || "" : "";
@@ -246,6 +263,7 @@ const HEADER_ROW = [
   "SSC Memo",
   "HSC Memo",
   "Aadhaar (Upload)",
+  "Application PDF",
 ];
 
 const COLUMN_TO_FIELD = {
@@ -301,41 +319,15 @@ const COLUMN_TO_FIELD = {
   Declaration: "declaration",
 };
 
-/** Columns inserted into older sheets when missing (order matters). */
-const HEADER_INSERTIONS = [{ label: "MPC Group %", after: "HSC Chemistry" }];
-
-/** Ensure row 1 matches HEADER_ROW and insert any missing academic columns. */
-function syncHeaderRow_(sheet) {
+/** Write row 1 headers — only called on a brand-new empty tab. */
+function initHeaderRow_(sheet) {
   const width = HEADER_ROW.length;
-  let lastCol = Math.max(sheet.getLastColumn(), 1);
-
-  if (sheet.getLastRow() < 1) {
-    sheet.insertRowBefore(1);
-  }
-
-  let existing = sheet
-    .getRange(1, 1, 1, lastCol)
-    .getValues()[0]
-    .map(function (v) {
-      return String(v || "").trim();
-    });
-
-  HEADER_INSERTIONS.forEach(function (item) {
-    if (existing.indexOf(item.label) !== -1) return;
-    const anchorIdx = existing.indexOf(item.after);
-    if (anchorIdx === -1) return;
-    sheet.insertColumnAfter(anchorIdx + 1);
-    existing.splice(anchorIdx + 1, 0, item.label);
-    lastCol = sheet.getLastColumn();
-  });
-
   if (sheet.getMaxColumns() < width) {
     sheet.insertColumnsAfter(
       sheet.getMaxColumns(),
       width - sheet.getMaxColumns(),
     );
   }
-
   sheet.getRange(1, 1, 1, width).setValues([HEADER_ROW]);
   sheet.setFrozenRows(1);
   sheet
@@ -345,30 +337,56 @@ function syncHeaderRow_(sheet) {
     .setFontColor("#ffffff");
 }
 
-/** Get a tab by name (create it if missing), sync its header row, and
-    normalize any legacy duplicate "Aadhaar" headers. */
+/** True when the tab has no rows yet (needs header row written once). */
+function sheetNeedsHeaderInit_(sheet) {
+  return sheet.getLastRow() === 0;
+}
+
+/** Guard: existing tabs must already have correct column count and
+    matching first/last header labels. Never auto-fix — fail loudly. */
+function assertHeadersOk_(sheet) {
+  const width = HEADER_ROW.length;
+  const lastCol = sheet.getLastColumn();
+  if (lastCol < width) {
+    throw new Error(
+      'Tab "' +
+        sheet.getName() +
+        '" has ' +
+        lastCol +
+        " columns but HEADER_ROW expects " +
+        width +
+        '. Fix row 1 manually in the Sheet — the script does not insert columns on existing tabs.',
+    );
+  }
+  const row1 = sheet.getRange(1, 1, 1, width).getValues()[0];
+  const first = String(row1[0] || "").trim();
+  const last = String(row1[width - 1] || "").trim();
+  if (first !== HEADER_ROW[0] || last !== HEADER_ROW[width - 1]) {
+    throw new Error(
+      'Tab "' +
+        sheet.getName() +
+        '" row 1 does not match HEADER_ROW (expected "' +
+        HEADER_ROW[0] +
+        '" … "' +
+        HEADER_ROW[width - 1] +
+        '"). Fix headers manually before accepting submissions.',
+    );
+  }
+}
+
+/** Open tab by name; create + init headers if missing/empty only. */
 function getOrCreateSheet_(ss, name) {
   let sheet = ss.getSheetByName(name);
-  if (!sheet) sheet = ss.insertSheet(name);
-  syncHeaderRow_(sheet);
-
-  // Legacy sheets used duplicate "Aadhaar" headers (number + upload).
-  // Normalize labels so the sheet stays readable going forward.
-  try {
-    const headerRange = sheet.getRange(1, 1, 1, HEADER_ROW.length);
-    const headerValues = headerRange.getValues()[0];
-    const aadhaarIdx = [];
-    headerValues.forEach(function (v, idx) {
-      if (String(v).trim() === "Aadhaar") aadhaarIdx.push(idx);
-    });
-    if (aadhaarIdx.length >= 2) {
-      headerValues[aadhaarIdx[0]] = "Aadhaar Number";
-      headerValues[aadhaarIdx[1]] = "Aadhaar (Upload)";
-      headerRange.setValues([headerValues]);
-    }
-  } catch (hdrErr) {
-    console.error("Header normalize failed:", hdrErr);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    initHeaderRow_(sheet);
+    return sheet;
   }
+  if (sheetNeedsHeaderInit_(sheet)) {
+    initHeaderRow_(sheet);
+    return sheet;
+  }
+  assertHeadersOk_(sheet);
   return sheet;
 }
 
