@@ -1162,7 +1162,7 @@
                         <polyline points="21 15 16 10 5 21" />
                       </svg>
                       <span class="file-prompt">Click to upload photo</span>
-                      <span class="file-hint">JPG / PNG, &lt;2 MB</span>
+                      <span class="file-hint">JPG / PNG, &lt;5 MB</span>
                     </label>
                     <input
                       type="file"
@@ -1190,7 +1190,7 @@
                         <circle cx="11" cy="11" r="2" />
                       </svg>
                       <span class="file-prompt">Upload scanned signature</span>
-                      <span class="file-hint">JPG / PNG, &lt;2 MB</span>
+                      <span class="file-hint">JPG / PNG, &lt;5 MB</span>
                     </label>
                     <input
                       type="file"
