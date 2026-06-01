@@ -13,6 +13,25 @@
 
   const SESSION_FLAG = "crrao-enquiry-popup-shown";
   const POPUP_DELAY_MS = 5000;
+  const DEFAULT_THANK_YOU_URL =
+    (typeof window !== "undefined" && window.CRRAO_THANK_YOU_URL) ||
+    "thank-you.php";
+
+  function getThankYouUrl(form, payload) {
+    const base = (form && form.dataset.thankYouUrl) || DEFAULT_THANK_YOU_URL;
+    const type =
+      (form && form.dataset.thankYouType) ||
+      (form && form.dataset.source === "Contact Page" ? "contact" : "enquiry");
+    const params = new URLSearchParams();
+    params.set("type", type);
+    if (payload && payload.name) params.set("name", payload.name);
+    const query = params.toString();
+    return query ? base + "?" + query : base;
+  }
+
+  function redirectToThankYou(form, payload) {
+    window.location.href = getThankYouUrl(form, payload);
+  }
 
   function isValidMobile(value) {
     return /^[6-9]\d{9}$/.test(String(value || "").replace(/\s/g, ""));
@@ -126,12 +145,7 @@
       GOOGLE_SCRIPT_URL === "YOUR_ENQUIRY_SCRIPT_URL_HERE"
     ) {
       console.warn("Enquiry GOOGLE_SCRIPT_URL is not configured.", payload);
-      showMessage(
-        messageEl,
-        "Thank you! Your enquiry has been recorded. Our team will contact you soon.",
-        "success",
-      );
-      form.reset();
+      redirectToThankYou(form, payload);
       return true;
     }
 
@@ -171,14 +185,7 @@
         throw new Error("Submission failed");
       }
 
-      showMessage(
-        messageEl,
-        "Thank you <strong>" +
-          payload.name +
-          "</strong>! Your message has been submitted. We will get back to you shortly.",
-        "success",
-      );
-      form.reset();
+      redirectToThankYou(form, payload);
       return true;
     } catch (err) {
       console.error("Enquiry submission failed:", err, payload);
@@ -251,10 +258,7 @@
     if (form) {
       form.addEventListener("submit", async function (e) {
         e.preventDefault();
-        const ok = await submitEnquiry(form, messageEl);
-        if (ok) {
-          setTimeout(closeModal, 2500);
-        }
+        await submitEnquiry(form, messageEl);
       });
     }
 

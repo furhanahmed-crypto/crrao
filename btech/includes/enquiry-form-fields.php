@@ -20,6 +20,7 @@ $is_modal = $enquiry_form_variant === 'modal';
       id="<?php echo htmlspecialchars($enquiry_form_id, ENT_QUOTES, 'UTF-8'); ?>"
       data-source="<?php echo htmlspecialchars($enquiry_form_source, ENT_QUOTES, 'UTF-8'); ?>"
       data-message-target="<?php echo htmlspecialchars($enquiry_message_id, ENT_QUOTES, 'UTF-8'); ?>"
+      data-thank-you-type="<?php echo $is_modal ? 'enquiry' : 'contact'; ?>"
       novalidate>
 
 <?php if ($is_modal) : ?>
