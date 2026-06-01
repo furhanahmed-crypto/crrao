@@ -45,6 +45,7 @@
 </head>
 
 <body>
+<?php include __DIR__ . '/../includes/marketing-tags-body.php'; ?>
   <!-- ===== SITE HEADER (header.php — top bar + navbar, no slider) ===== -->
   <?php include '../header.php'; ?>
   <!-- End header section -->

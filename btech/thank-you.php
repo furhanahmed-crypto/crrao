@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/thank-you.css">
 </head>
 <body class="contact thank-you">
+<?php include __DIR__ . '/includes/marketing-tags-body.php'; ?>
 <div id="preloader">
     <div id="status">&nbsp;</div>
 </div>

@@ -47,6 +47,7 @@
 </head>
 
 <body>
+<?php include __DIR__ . '/includes/marketing-tags-body.php'; ?>
 	<!-- Preloader -->
 	<div id="preloader">
 		<div id="status">&nbsp;</div>

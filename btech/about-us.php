@@ -42,6 +42,7 @@
 	</style>
 </head>
 <body class="t-profile-01">
+<?php include __DIR__ . '/includes/marketing-tags-body.php'; ?>
 <!-- Preloader -->
 <div id="preloader">
 	<div id="status">&nbsp;</div>

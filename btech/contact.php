@@ -30,6 +30,7 @@
 	<link rel="stylesheet" href="css/responsive.css">
 </head>
 <body class="contact">
+<?php include __DIR__ . '/includes/marketing-tags-body.php'; ?>
 <!-- Preloader -->
 <div id="preloader">
 	<div id="status">&nbsp;</div>
