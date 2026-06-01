@@ -6611,6 +6611,24 @@ body.has-sticky-cta .whatsapp-float {
   font-weight: 700;
   letter-spacing: 0.05em;
 }
+.apply-success-actions {
+  margin-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.apply-thankyou-shell {
+  min-height: 50vh;
+}
+.apply-thankyou-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid var(--clr-gray-100);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(26, 58, 107, 0.08);
+}
 
 /* Tiny helpers for the apply page */
 .apply-info-tile {

@@ -33,15 +33,34 @@
   const Y_LIMIT = PAGE.h - MARGIN.bottom - FOOTER_RESERVE;
 
   /* ---------- DOM hooks ---------- */
+  const SNAPSHOT_KEY = "crrao-application-submit";
   const form = document.getElementById("applyForm");
   const downloadBtn = document.getElementById("downloadApplicationBtn");
   const successDownloadBtn = document.getElementById(
     "downloadApplicationSuccessBtn",
   );
-  if (!form || (!downloadBtn && !successDownloadBtn)) return;
+
+  let snapshotSource = null;
+  try {
+    snapshotSource = JSON.parse(
+      sessionStorage.getItem(SNAPSHOT_KEY) || "null",
+    );
+  } catch (e) {
+    snapshotSource = null;
+  }
+
+  const hasForm = !!form;
+  const hasSnapshot = !!snapshotSource;
+  if (!hasForm && !hasSnapshot) return;
+  if (hasForm && !downloadBtn && !successDownloadBtn && !hasSnapshot) return;
+  if (!hasForm && hasSnapshot && !successDownloadBtn) return;
 
   /* ---------- form readers ---------- */
   function getField(name) {
+    if (snapshotSource?.fields && name in snapshotSource.fields) {
+      return String(snapshotSource.fields[name] ?? "").trim();
+    }
+    if (!form) return "";
     const el = form.querySelector(`[name="${name}"]`);
     if (!el) return "";
     if (el.type === "radio") {
@@ -57,11 +76,19 @@
   }
 
   function fileNameOf(name) {
+    if (snapshotSource?.fileNames?.[name]) {
+      return snapshotSource.fileNames[name];
+    }
+    if (!form) return "Not uploaded";
     const f = form.querySelector(`[name="${name}"]`)?.files?.[0];
     return f ? f.name : "Not uploaded";
   }
 
   function readImageAsDataUrl(inputName) {
+    if (snapshotSource?.images?.[inputName]) {
+      return Promise.resolve(snapshotSource.images[inputName]);
+    }
+    if (!form) return Promise.resolve(null);
     return new Promise((resolve) => {
       const f = form.querySelector(`[name="${inputName}"]`)?.files?.[0];
       if (!f || !f.type.startsWith("image/")) return resolve(null);
@@ -91,6 +118,15 @@
   /** Returns { dataUrl, w, h } or null. The natural pixel size is used
       later to embed the signature without horizontal/vertical stretching. */
   async function getSignatureDataUrl() {
+    if (snapshotSource?.signature?.dataUrl) {
+      const size = await getImageNaturalSize(snapshotSource.signature.dataUrl);
+      return {
+        dataUrl: snapshotSource.signature.dataUrl,
+        w: size?.w || 0,
+        h: size?.h || 0,
+      };
+    }
+    if (!form) return null;
     /* 1) Prefer the hidden field populated by the signature pad on each stroke. */
     const hidden = document.getElementById("signature_data");
     if (hidden?.value?.startsWith("data:")) {
@@ -691,8 +727,16 @@
   });
 
   successDownloadBtn?.addEventListener("click", () => {
+    if (!hasForm && !hasSnapshot) {
+      alert(
+        "Your application PDF is available only in this browser session right after submission. " +
+          "Please check your email for the confirmation copy, or contact admissions at btechadmissions.crr@gmail.com.",
+      );
+      return;
+    }
     const ref =
       document.getElementById("refId")?.textContent?.trim() ||
+      snapshotSource?.reference_id ||
       "Submitted application";
     downloadPdf(ref, "Submitted copy", successDownloadBtn);
   });

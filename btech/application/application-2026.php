@@ -1548,53 +1548,6 @@
                 </button>
               </div>
             </section>
-
-            <!-- ============== SUCCESS ============== -->
-            <section class="apply-step" data-step="10" id="successStep">
-              <div class="apply-success" style="text-align: center">
-                <div class="apply-success-icon">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                </div>
-                <h2>Application Submitted Successfully!</h2>
-                <p>
-                  Your B.Tech 2026-27 application has been received by our
-                  admissions cell. Our team will review and reach out within
-                  <strong>24 working hours</strong>.
-                </p>
-                <p>
-                  A confirmation copy has been sent to your registered email.
-                  Please save your reference ID below.
-                </p>
-                <div class="reference-id" id="refId">CRR-2026-XXXXXX</div>
-                <div
-                  style="
-                      margin-top: 2rem;
-                      display: flex;
-                      flex-wrap: wrap;
-                      justify-content: center;
-                      gap: 0.75rem;
-                    ">
-                  <button
-                    type="button"
-                    class="btn btn-outline"
-                    id="downloadApplicationSuccessBtn">
-                    Download Application Copy (PDF)
-                  </button>
-                  <a href="index.php" class="btn btn-outline">Back to Home</a>
-                  <a
-                    href="https://wa.me/917331155319"
-                    class="btn btn-whatsapp">WhatsApp Admissions</a>
-                </div>
-              </div>
-            </section>
           </form>
         </main>
       </div>
@@ -1628,6 +1581,10 @@
   <script src="js/assets/jquery.meanmenu.min.js"></script>
   <script src="js/custom.js"></script>
   <!-- Application JS -->
+  <?php require_once __DIR__ . '/../includes/site-base.php'; ?>
+  <script>
+    window.CRRAO_APP_THANKYOU_URL = <?php echo json_encode(rtrim(SITE_BASE_HREF, '/') . '/application/application-submitted-thankyou.php', JSON_UNESCAPED_SLASHES); ?>;
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="application/application-download.js" defer></script>
   <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>

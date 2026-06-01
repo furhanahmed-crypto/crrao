@@ -28,8 +28,6 @@
   const progressBar = document.getElementById("progressBar");
   const reviewBox = document.getElementById("reviewSummary");
   const submitBtn = document.getElementById("submitBtn");
-  const refIdEl = document.getElementById("refId");
-  const successStep = document.getElementById("successStep");
 
   let currentStep = 1;
 
@@ -819,6 +817,61 @@
     return "CRR-2026-" + ts + r;
   }
 
+  const SUBMIT_SNAPSHOT_KEY = "crrao-application-submit";
+
+  /** Persist text fields + photo/signature so PDF download works on thank-you page. */
+  function saveSubmissionSnapshot(payload) {
+    const snapshot = {
+      reference_id: payload.reference_id,
+      fields: {},
+      fileNames: {},
+      images: {},
+      signature: null,
+    };
+
+    Object.keys(payload).forEach((key) => {
+      if (key === "files" || key === "reference_id" || key === "submitted_at") {
+        return;
+      }
+      snapshot.fields[key] = payload[key];
+    });
+
+    Object.entries(payload.files || {}).forEach(([key, file]) => {
+      if (!file?.data) return;
+      snapshot.fileNames[key] = file.name || key;
+      const dataUrl =
+        "data:" + (file.type || "application/octet-stream") + ";base64," + file.data;
+
+      if (key === "upload_photo" && file.type?.startsWith("image/")) {
+        snapshot.images.upload_photo = dataUrl;
+      }
+      if (key === "digital_signature") {
+        snapshot.signature = { dataUrl };
+      } else if (
+        key === "upload_signature" &&
+        file.type?.startsWith("image/") &&
+        !snapshot.signature
+      ) {
+        snapshot.signature = { dataUrl };
+      }
+    });
+
+    try {
+      sessionStorage.setItem(SUBMIT_SNAPSHOT_KEY, JSON.stringify(snapshot));
+    } catch (err) {
+      console.warn("Could not save submission snapshot for PDF download:", err);
+    }
+  }
+
+  function redirectToThankYou(refId) {
+    const thankYouPath =
+      (typeof window !== "undefined" && window.CRRAO_APP_THANKYOU_URL) ||
+      new URL("application-submitted-thankyou.php", window.location.href).href;
+    const url = new URL(thankYouPath, window.location.origin);
+    url.searchParams.set("ref", refId);
+    window.location.assign(url.href);
+  }
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!validateStep(9)) return;
@@ -928,26 +981,12 @@
       hideSubmitNotice();
     }
 
-    /* 4. Show success */
-    refIdEl.textContent = refId;
-    steps.forEach((s) => s.classList.remove("active"));
-    successStep.classList.add("active");
-
-    if (stepList) {
-      stepList
-        .querySelectorAll("li")
-        .forEach((li) => li.classList.add("completed"));
-    }
-    if (progressBar) progressBar.style.width = "100%";
-
-    /* 5. Clear the saved draft (the user has submitted) */
+    /* 4. Redirect to thank-you page (marketing + PDF download) */
+    saveSubmissionSnapshot(payload);
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch (e) {}
-    window.scrollTo({
-      top: document.querySelector(".apply-shell").offsetTop - 80,
-      behavior: "smooth",
-    });
+    redirectToThankYou(refId);
   });
 
   /* ──────────────────────────────────────────────────────────
