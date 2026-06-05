@@ -140,7 +140,7 @@
 					<p style="text-align:right;">Dt. 22.05.2026</p>
 
 					<h4 style="text-align:center;">Admission Notification-2026</h4>
-					<p>Online applications are invited for admissions into the following AICTE approved Self-Finance B.Tech courses in collaboration with JNTUH, for 10+2 qualified students, to apply for studying in C R Rao Advanced Institute of Mathematics Statistics and Computer Science (C R Rao AIMSCS) for the academic year 2026-27. The last date for submission of applications is 4th June 2026. The schedule for the first round of counselling will be announced after 4th June 2026</p>
+					<p>Online applications are invited for admissions into the following AICTE approved Self-Finance B.Tech courses in collaboration with JNTUH, for 10+2 qualified students, to apply for studying in C R Rao Advanced Institute of Mathematics Statistics and Computer Science (C R Rao AIMSCS) for the academic year 2026-27. The last date for submission of applications is 8th June 2026. The schedule for the first round of counselling will be announced after 8th June 2026</p>
 
 					<ol>
 						<li>Computer Science and Engineering (Data Science)</li>
