@@ -14,4 +14,4 @@ $btech_popup_base_url = '/btech-application-popup';
 $btech_subdir = '/btech';
 
 $btech_application_url = $btech_subdir . '/application/application-2026.php';
-$btech_popup_image_url = $btech_subdir . '/images/application/crrao-application.png';
+$btech_popup_image_url = $btech_subdir . '/images/application/crrao-admission-banner-img.jpeg';

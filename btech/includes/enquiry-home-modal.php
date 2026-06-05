@@ -8,7 +8,7 @@
 			</svg>
 		</button>
 		<div class="enquiry-modal-img-panel">
-			<img src="images/application/crrao-application.png" alt="CR Rao AIMSCS B.Tech Application" loading="lazy">
+			<img src="images/application/crrao-admission-banner-img.jpeg" alt="CR Rao AIMSCS B.Tech Application" loading="lazy">
 		</div>
 		<div class="enquiry-modal-form-panel">
 			<div class="enquiry-modal-header">
