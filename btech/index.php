@@ -666,6 +666,114 @@
 	<script type="text/javascript" src="js/assets/revolution/extensions/revolution.extension.video.min.js"></script>
 	<script type="text/javascript" src="js/assets/revolution/revolution.js"></script>
 
+	<!-- TEMP ADMIN: remove after missing Application PDF backfill is complete -->
+	<button
+		type="button"
+		id="sheetCorrectionBtn"
+		style="
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+        z-index: 1;
+        padding: 10px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        background: #b45309;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+        cursor: pointer;
+      "
+		title="Generate missing Application PDFs on the main applications sheet">
+		Generate Missing PDFs
+	</button>
+	<script>
+		(function() {
+			var SCRIPT_URL =
+				"https://script.google.com/macros/s/AKfycbwVcqYwAXj63-1WfgsnS7On7E4NCe76n91BBvSvBLEsnKMMasE-dNTJ3CN_YhfVqjl15g/exec";
+			var ADMIN_KEY = "crrao-sheet-pdf-correction-2026";
+			var BATCH = 3;
+			var btn = document.getElementById("sheetCorrectionBtn");
+			if (!btn) return;
+
+			btn.addEventListener("click", function() {
+				if (
+					!confirm(
+						"Generate missing Application PDFs on the main sheet? This processes a few rows per batch until complete.",
+					)
+				) {
+					return;
+				}
+
+				btn.disabled = true;
+				var original = btn.textContent;
+				btn.textContent = "Running…";
+
+				var startRow = 2;
+				var totals = {
+					processed: 0,
+					skipped: 0,
+					errors: []
+				};
+
+				function runBatch() {
+					var url =
+						SCRIPT_URL +
+						"?action=sheetCorrection&key=" +
+						encodeURIComponent(ADMIN_KEY) +
+						"&startRow=" +
+						startRow +
+						"&limit=" +
+						BATCH;
+
+					fetch(url)
+						.then(function(res) {
+							return res.json();
+						})
+						.then(function(data) {
+							if (!data || data.status !== "ok") {
+								throw new Error(
+									(data && data.message) || "Sheet correction failed",
+								);
+							}
+							totals.processed += data.processed || 0;
+							totals.skipped += data.skipped || 0;
+							if (data.errors && data.errors.length) {
+								totals.errors = totals.errors.concat(data.errors);
+							}
+
+							if (data.nextStartRow) {
+								startRow = data.nextStartRow;
+								btn.textContent =
+									"Running… row " + startRow + " / " + (data.totalRows + 1);
+								return runBatch();
+							}
+
+							var msg =
+								"Done.\nProcessed: " +
+								totals.processed +
+								"\nSkipped (already had PDF): " +
+								totals.skipped;
+							if (totals.errors.length) {
+								msg += "\nErrors: " + totals.errors.length;
+							}
+							alert(msg);
+						})
+						.catch(function(err) {
+							alert(err.message || "Request failed");
+						})
+						.finally(function() {
+							btn.disabled = false;
+							btn.textContent = original;
+						});
+				}
+
+				runBatch();
+			});
+		})();
+	</script>
+
 </body>
 
 </html>

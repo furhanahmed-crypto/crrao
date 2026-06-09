@@ -934,12 +934,16 @@
     }
 
     /* Generated application PDF — saved to Drive and linked in the Sheet */
-    if (window.CRRaoApplicationPdf?.getBase64ForSubmit) {
+    if (!window.CRRaoApplicationPdf?.getBase64ForSubmit) {
+      console.error(
+        "Application PDF module did not load. Check jsPDF and application-download.js.",
+      );
+    } else {
       try {
         payload.files.upload_application_pdf =
           await window.CRRaoApplicationPdf.getBase64ForSubmit(refId);
       } catch (pdfErr) {
-        console.warn(
+        console.error(
           "Application PDF could not be generated for upload:",
           pdfErr,
         );

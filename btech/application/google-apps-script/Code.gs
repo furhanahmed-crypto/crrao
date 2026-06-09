@@ -54,6 +54,7 @@ const DRIVE_FOLDER_ID = "1SC5lMaZs0aR5QOIPvGTWcHyB6MyMJXna";
 const SHEET_NAME = "CRR-btech-applications-2026-27";
 /** Shortlist tab — same row mirrored when MPC Group % >= threshold. */
 const SHORTLIST_SHEET_NAME = "60-percent-or-above";
+const BACKUP_SHEET_NAME = "CRR-btech-applications-backup-2026-27";
 const SHORTLIST_MPC_THRESHOLD = 60;
 const SEND_CONFIRMATION_EMAIL = true;
 const ADMIN_NOTIFY_EMAIL = "btechadmissions.crr@gmail.com"; // btechadmissions@crraoaimscs.res.in
@@ -61,8 +62,13 @@ const ADMIN_NOTIFY_EMAIL = "btechadmissions.crr@gmail.com"; // btechadmissions@c
 const APP_SCRIPT_VERSION = "2026.05.26-email-pdf-link";
 /* ─────────────────────────────────── */
 
-/** Browser GET — used as a health check. */
-function doGet() {
+/** Browser GET — health check or admin sheetCorrection (index.php button). */
+function doGet(e) {
+  e = e || {};
+  if (e.parameter && e.parameter.action === "sheetCorrection") {
+    return handleSheetCorrectionRequest_(e);
+  }
+
   return ContentService.createTextOutput(
     JSON.stringify({
       status: "ok",
@@ -73,6 +79,7 @@ function doGet() {
       header_columns: HEADER_ROW.length,
       has_mpc_group_pct: HEADER_ROW.indexOf("MPC Group %") !== -1,
       has_application_pdf: HEADER_ROW.indexOf("Application PDF") !== -1,
+      backup_sheet: BACKUP_SHEET_NAME,
     }),
   ).setMimeType(ContentService.MimeType.JSON);
 }

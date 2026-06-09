@@ -6,8 +6,9 @@
  * usable both for the student's records and for our admissions office.
  *
  * Triggers:
- *   - #downloadApplicationBtn         (Step 9, before declaration)
- *   - #downloadApplicationSuccessBtn  (Success step, after submission)
+ *   - Submit (application.js → CRRaoApplicationPdf.getBase64ForSubmit)
+ *   - #downloadApplicationBtn         (Step 9 preview, optional)
+ *   - #downloadApplicationSuccessBtn  (Thank-you page download)
  *
  * Dependency: html2pdf.bundle.min.js (already loaded on the page) ships
  * jsPDF at window.jspdf.jsPDF.
@@ -51,9 +52,9 @@
 
   const hasForm = !!form;
   const hasSnapshot = !!snapshotSource;
-  if (!hasForm && !hasSnapshot) return;
-  if (hasForm && !downloadBtn && !successDownloadBtn && !hasSnapshot) return;
-  if (!hasForm && hasSnapshot && !successDownloadBtn) return;
+  /* Always init when the apply form or a post-submit snapshot is present —
+     PDF upload on submit must not depend on optional download buttons. */
+  if (!hasForm && !hasSnapshot && !successDownloadBtn) return;
 
   /* ---------- form readers ---------- */
   function getField(name) {
